@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Nested git worktrees for parallel sub-agents (docs/ARCHITECTURE.md §51-78)
+    // live under here — they're separate working trees with their own lint runs,
+    // not part of this one.
+    ".claude/**",
   ]),
 ]);
 

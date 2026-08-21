@@ -184,6 +184,18 @@ npm run seed                   # demo admin/designers/customers/fonts/orders
 npm run dev
 ```
 
+## Testing strategy
+
+Unit/integration tests use `vitest` (`tests/unit/`, `tests/integration/`).
+`mongodb-memory-server` is installed but **can't spawn its own `mongod` binary in
+this sandbox** (subprocess spawn is restricted) — `tests/setup/db.ts` instead
+points `MONGODB_URI` at a dedicated `glyphora_test` database on the real local
+`mongod` and drops it clean before/after each test file
+(`connectTestDB()`/`disconnectTestDB()`). If your environment *can* run
+`mongodb-memory-server`, swapping `tests/setup/db.ts`'s internals back to it is a
+drop-in change — every test only depends on those two exported functions, not on
+how the database gets there. E2E tests use `@playwright/test` (`tests/e2e/`).
+
 ## Quality gates (run after every feature merge)
 
 ```bash

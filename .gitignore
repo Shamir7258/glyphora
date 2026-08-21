@@ -53,3 +53,6 @@ next-env.d.ts
 .vscode/
 .idea/
 Thumbs.db
+
+# Claude Code local worktree storage (parallel sub-agents)
+/.claude/

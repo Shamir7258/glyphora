@@ -172,7 +172,7 @@ async function main() {
   const adminUser = await upsertUser("admin@glyphora.app", "Glyphora Admin", ["CUSTOMER", "ADMIN", "SUPER_ADMIN"]);
   const platformUser = await upsertUser("originals@glyphora.app", "Glyphora Studio", ["CUSTOMER", "DESIGNER"]);
   const customer1 = await upsertUser("jordan@example.com", "Jordan Lee", ["CUSTOMER"]);
-  const customer2 = await upsertUser("priya@example.com", "Priya Nair", ["CUSTOMER"]);
+  await upsertUser("priya@example.com", "Priya Nair", ["CUSTOMER"]); // second demo customer, no direct references needed below
 
   const platformDesigner = await DesignerProfileModel.findOneAndUpdate(
     { username: "glyphora-originals" },
