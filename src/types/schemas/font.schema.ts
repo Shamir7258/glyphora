@@ -44,7 +44,18 @@ export const registerFileSchema = z.object({
 });
 export type RegisterFileInput = z.infer<typeof registerFileSchema>;
 
+// `mode` distinguishes "Reject" from "Request changes" for tone/audit-log labeling
+// only — both write FontStatus 'REJECTED' so the designer's existing resubmit path
+// (FontPublishingService.submitForReview allows DRAFT|REJECTED -> PENDING_REVIEW)
+// keeps working unmodified. See docs/agent-reports/admin-panel.md for the full
+// rationale.
 export const adminRejectSchema = z.object({
   reason: z.string().trim().min(10, "Give the designer a specific reason (min 10 characters)").max(1000),
+  mode: z.enum(["REJECT", "REQUEST_CHANGES"]).default("REJECT"),
 });
 export type AdminRejectInput = z.infer<typeof adminRejectSchema>;
+
+export const adminSuspendSchema = z.object({
+  reason: z.string().trim().max(1000).optional(),
+});
+export type AdminSuspendInput = z.infer<typeof adminSuspendSchema>;

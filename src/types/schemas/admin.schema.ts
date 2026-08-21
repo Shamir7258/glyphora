@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { COUPON_TYPE, COUPON_APPLIES_TO } from "@/types/enums";
+import { COUPON_TYPE, COUPON_APPLIES_TO, ACCOUNT_STATUS } from "@/types/enums";
+
+export const accountStatusUpdateSchema = z.object({
+  status: z.enum(ACCOUNT_STATUS),
+});
+export type AccountStatusUpdateInput = z.infer<typeof accountStatusUpdateSchema>;
 
 export const commissionUpdateSchema = z.object({
   percentage: z.coerce.number().min(0).max(100),
