@@ -6,6 +6,8 @@ import { connectDB } from "@/server/lib/db";
 import { UserModel } from "@/server/models/user.model";
 import { DesignerProfileModel } from "@/server/models/designer-profile.model";
 import { loginSchema } from "@/types/schemas/auth.schema";
+import { rateLimit } from "@/server/lib/rate-limit";
+import { ApiError } from "@/types/errors";
 import type { Role } from "@/types/enums";
 
 const providers: NextAuthOptions["providers"] = [
@@ -19,6 +21,18 @@ const providers: NextAuthOptions["providers"] = [
       const parsed = loginSchema.safeParse(raw);
       if (!parsed.success) return null;
       const { email, password } = parsed.data;
+
+      // Keyed by email rather than IP: this is the actual login-attempt path
+      // (unlike POST /api/auth/register, which has its own IP-keyed limit) and
+      // the thing worth bounding is brute-forcing one account's password, which
+      // an attacker can do from many IPs. Generous enough not to lock out a user
+      // who mistypes their password a few times.
+      try {
+        rateLimit(`login:${email}`, 10, 5 * 60_000);
+      } catch (err) {
+        if (err instanceof ApiError) return null; // NextAuth's authorize() signals failure via null, not a thrown response
+        throw err;
+      }
 
       await connectDB();
       const user = await UserModel.findOne({ email });
