@@ -2,6 +2,7 @@ import { connectDB } from "@/server/lib/db";
 import { FontModel } from "@/server/models/font.model";
 import { CategoryModel } from "@/server/models/category.model";
 import { TagModel } from "@/server/models/tag.model";
+import { FontLicenseModel } from "@/server/models/font-license.model";
 import type { PipelineStage } from "mongoose";
 import type { SearchProvider, SearchFilters, SearchResultRow } from "@/server/services/search/provider";
 
@@ -44,6 +45,24 @@ export const AtlasSearchProvider: SearchProvider = {
           path: "basePriceCents",
           ...(filters.priceMinCents != null ? { gte: filters.priceMinCents } : {}),
           ...(filters.priceMaxCents != null ? { lte: filters.priceMaxCents } : {}),
+        },
+      });
+    }
+    if (filters.licenseKey) {
+      const license = await FontLicenseModel.findOne({ key: filters.licenseKey.toUpperCase(), isActive: true })
+        .select("_id")
+        .lean();
+      if (!license) return { rows: [], total: 0 };
+      // Empty Font.licenses = "not yet configured by the designer" = sold under
+      // every active license (same fallback as the local provider). Expressed as
+      // a nested compound so either branch satisfies the outer filter clause.
+      // NOTE: mirrors LocalTextSearchProvider's semantics but is untested against
+      // a real Atlas cluster (none is available in this environment) — verify
+      // against a live index before relying on it in production.
+      compoundFilters.push({
+        compound: {
+          should: [{ equals: { path: "licenses", value: license._id } }, { compound: { mustNot: [{ exists: { path: "licenses" } }] } }],
+          minimumShouldMatch: 1,
         },
       });
     }

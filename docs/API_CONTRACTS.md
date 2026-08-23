@@ -44,6 +44,9 @@ route file:
 | `DELETE /api/favorites/[id]` | session, owner | — | `{ ok: true }` |
 | `GET /api/collections` | session | — | `Collection[]` (with populated fonts) |
 | `POST /api/collections` | session | `{ name, description? }` | `Collection` |
+| `GET /api/collections/[id]` | session, owner | — | `Collection` detail with populated fonts |
+| `POST /api/collections/[id]/fonts` | session, owner | `{ fontId }` | `Collection` |
+| `DELETE /api/collections/[id]/fonts/[fontId]` | session, owner | — | `Collection` |
 | `GET /api/cart` | session or guest cookie | — | `Cart` |
 | `POST /api/cart/items` | session or guest | `{ fontId, licenseId, variantId? }` | `Cart` |
 | `DELETE /api/cart/items/[itemId]` | session or guest | — | `Cart` |
@@ -51,7 +54,7 @@ route file:
 | `POST /api/checkout/session` | session or guest (customerInfo required for guest) | `{ customerInfo }` | `{ redirectUrl }` — creates `PENDING` Order, Stripe Checkout Session |
 | `GET /api/orders/[orderNumber]` | session, owner (or guest email match) | — | `Order` |
 | `GET /api/orders` | session | `?page=&limit=` | paginated `Order[]` |
-| `GET /api/downloads/[orderItemId]` | session, owner | — | `302` redirect to signed URL (not JSON) |
+| `GET /api/downloads/[orderItemId]` | session, owner | `?file=<fontFileId>` optional (picks among multiple DELIVERABLE files; defaults to the first) | `307` redirect to signed URL (not JSON) — matches ARCHITECTURE.md §6, supersedes an earlier `302` in this doc |
 | `POST /api/reviews` | session, must own a `PAID` order for the font | `{ fontId, rating, comment }` | `Review` |
 
 ## Designer API (`/api/seller/**`)
@@ -61,6 +64,7 @@ route file:
 | `GET /api/seller/profile` / `PATCH /api/seller/profile` | `DesignerProfile` |
 | `GET /api/seller/fonts` | designer's own fonts, any status |
 | `POST /api/seller/fonts` | create `DRAFT` font, returns `{ fontId }` |
+| `GET /api/seller/fonts/[id]` | full draft state (metadata, files, signed preview URLs, submission checklist) — owner only |
 | `PATCH /api/seller/fonts/[id]` | update metadata (only while `DRAFT`/`REJECTED`) |
 | `POST /api/seller/fonts/[id]/upload-url` | `{ purpose, format }` → `{ uploadUrl, storageKey }` presigned PUT |
 | `POST /api/seller/fonts/[id]/files` | register uploaded file `{ storageKey, purpose, format, variantId? }`, triggers server-side validation |
@@ -76,11 +80,16 @@ route file:
 |---|---|
 | `GET /api/admin/dashboard` | revenue/orders/customers/designers/pending-count summary |
 | `GET /api/admin/fonts?status=PENDING_REVIEW` | moderation queue |
+| `GET /api/admin/fonts/[id]` | full review detail (metadata, files sans storageKey, designer info, pricing) |
 | `POST /api/admin/fonts/[id]/approve` | `PENDING_REVIEW → APPROVED` (then designer/admin explicitly publishes → `PUBLISHED`, or approve auto-publishes for `isPlatform` designer fonts — see DEVELOPMENT.md decision log) |
-| `POST /api/admin/fonts/[id]/reject` | `{ reason }` (required) → `REJECTED` |
+| `POST /api/admin/fonts/[id]/publish` | `APPROVED → PUBLISHED` (third-party fonts only — platform fonts auto-publish on approve) |
+| `POST /api/admin/fonts/[id]/reject` | `{ reason, mode?: 'REJECT'\|'REQUEST_CHANGES' }` (reason required) → `REJECTED`; `mode` only changes audit-log tone/label, both write the same status |
 | `POST /api/admin/fonts/[id]/suspend` \| `/archive` | status transition |
+| `POST /api/admin/fonts/[id]/reactivate` | `SUSPENDED → APPROVED` (an explicit Publish is still required to reappear on the storefront) |
 | `GET /api/admin/designers` / `PATCH /api/admin/designers/[id]` | list/suspend designers |
+| `GET /api/admin/customers` / `PATCH /api/admin/customers/[id]` | list/suspend customers |
 | `GET /api/admin/orders` | all orders |
+| `GET /api/admin/orders/[id]` | order detail (line items, commission split, payment record) |
 | `GET /api/admin/commission` / `POST /api/admin/commission` | current + history / create new `CommissionConfig` row (never edits an existing row) |
 | `GET /api/admin/payouts` / `PATCH /api/admin/payouts/[id]` | list / mark `PROCESSING`\|`PAID`\|`REJECTED` |
 | `GET/POST/PATCH /api/admin/categories` | CRUD |

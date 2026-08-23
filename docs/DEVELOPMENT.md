@@ -30,6 +30,7 @@ src/
       purchases/page.tsx
       downloads/page.tsx
       favorites/page.tsx
+      collections/page.tsx        # index/list + create — needed to discover a collection's id at all
       collections/[id]/page.tsx
       profile/page.tsx
       billing/page.tsx

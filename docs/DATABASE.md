@@ -100,6 +100,11 @@ creationSource  'MARKETPLACE_UPLOAD' | 'INTERNAL_FONT_LAB', default MARKETPLACE_
 description     string
 category        ObjectId -> Category, indexed
 tags            ObjectId[] -> Tag
+licenses        ObjectId[] -> FontLicense, default []   // which license templates this font
+                                                          // is sold under; [] = designer hasn't
+                                                          // configured it yet, treated as "all
+                                                          // active licenses" everywhere it's read
+                                                          // (discovery filter, cart, checkout)
 languages       string[]              // e.g. ["Latin", "Cyrillic"]
 glyphCount      number
 basePriceCents  number
@@ -167,6 +172,9 @@ Index: `{ user: 1, font: 1, collection: 1 }` unique.
 owner: { user: ObjectId | null, guestId: string | null }   // exactly one is set
 items: [{ font, license: ObjectId -> FontLicense, variant: ObjectId | null,
           unitPriceCents, addedAt }]
+coupon: ObjectId -> Coupon | null   // which coupon is currently applied, so
+                                    // discountCents/couponCode on CartDTO can be
+                                    // computed; null means none applied
 updatedAt
 ```
 Index: `{ 'owner.user': 1 }` unique sparse · `{ 'owner.guestId': 1 }` unique sparse.
@@ -312,7 +320,8 @@ raw events age out; V2 can roll them up before they expire).
       "tagNames": { "type": "string" },
       "status": { "type": "token" },
       "basePriceCents": { "type": "number" },
-      "publishedAt": { "type": "date" }
+      "publishedAt": { "type": "date" },
+      "licenses": { "type": "objectId" }
     }
   }
 }

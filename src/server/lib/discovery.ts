@@ -54,6 +54,7 @@ export async function queryFonts(filters: DiscoveryFilters): Promise<Paginated<F
     tagSlugs: filters.tagSlugs,
     priceMinCents: filters.priceMinCents,
     priceMaxCents: filters.priceMaxCents,
+    licenseKey: filters.licenseKey,
     sort: catalogSort,
     page,
     limit,

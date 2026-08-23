@@ -36,6 +36,7 @@ const INDEX_DEFINITION = {
       status: { type: "token" },
       basePriceCents: { type: "number" },
       publishedAt: { type: "date" },
+      licenses: { type: "objectId" },
     },
   },
 };

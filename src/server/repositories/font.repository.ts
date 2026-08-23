@@ -130,12 +130,26 @@ export const FontRepository = {
     /** Price range filters on basePriceCents (dollars in, cents used internally). */
     priceMinCents?: number;
     priceMaxCents?: number;
+    /** FontLicense.key, e.g. "COMMERCIAL" — see Font.licenses filtering below. */
+    licenseKey?: string;
   }) {
     await connectDB();
     const filter: Record<string, unknown> = { status: "PUBLISHED" };
     if (params.productType) filter.productType = params.productType;
     if (params.designerId) filter.designer = params.designerId;
     if (params.ids) filter._id = { $in: params.ids };
+
+    if (params.licenseKey) {
+      const { FontLicenseModel } = await import("@/server/models/font-license.model");
+      const license = await FontLicenseModel.findOne({ key: params.licenseKey.toUpperCase(), isActive: true })
+        .select("_id")
+        .lean();
+      if (!license) return { items: [] as PopulatedFont[], total: 0 };
+      // Font.licenses is a designer-set allow-list added after most seed fonts
+      // existed; an empty array means "not yet configured" and falls back to
+      // "sold under every active license" rather than matching nothing.
+      filter.$or = [{ licenses: { $exists: false } }, { licenses: { $size: 0 } }, { licenses: license._id }];
+    }
     if (params.priceMinCents != null || params.priceMaxCents != null) {
       filter.basePriceCents = {
         ...(params.priceMinCents != null ? { $gte: params.priceMinCents } : {}),

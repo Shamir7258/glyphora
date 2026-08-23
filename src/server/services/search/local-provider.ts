@@ -2,6 +2,7 @@ import { connectDB } from "@/server/lib/db";
 import { FontModel } from "@/server/models/font.model";
 import { CategoryModel } from "@/server/models/category.model";
 import { TagModel } from "@/server/models/tag.model";
+import { FontLicenseModel } from "@/server/models/font-license.model";
 import type { SearchProvider, SearchFilters, SearchResultRow } from "@/server/services/search/provider";
 
 /**
@@ -34,6 +35,15 @@ export const LocalTextSearchProvider: SearchProvider = {
         ...(filters.priceMinCents != null ? { $gte: filters.priceMinCents } : {}),
         ...(filters.priceMaxCents != null ? { $lte: filters.priceMaxCents } : {}),
       };
+    }
+    if (filters.licenseKey) {
+      const license = await FontLicenseModel.findOne({ key: filters.licenseKey.toUpperCase(), isActive: true })
+        .select("_id")
+        .lean();
+      if (!license) return { rows: [], total: 0 };
+      // Empty Font.licenses = "not yet configured by the designer" = sold under
+      // every active license, same fallback as FontRepository.listPublished().
+      mongoFilter.$or = [{ licenses: { $exists: false } }, { licenses: { $size: 0 } }, { licenses: license._id }];
     }
 
     const trimmed = query.trim();
