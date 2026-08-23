@@ -48,3 +48,40 @@ export const adminRejectSchema = z.object({
   reason: z.string().trim().min(10, "Give the designer a specific reason (min 10 characters)").max(1000),
 });
 export type AdminRejectInput = z.infer<typeof adminRejectSchema>;
+
+// ── Designer upload wizard additions (src/app/seller/**) ────────────────────
+
+/**
+ * Kicks off a draft font before any wizard step has real data — the Files step
+ * needs a fontId to attach FontFiles to before Details has been filled in, so
+ * POST /api/seller/fonts accepts just an optional working name and everything
+ * else is filled in progressively via PATCH /api/seller/fonts/[id] (see
+ * fontUpdateSchema below), validated in full at submit time.
+ */
+export const createDraftFontSchema = z.object({
+  name: z.string().trim().min(1).max(100).default("Untitled font"),
+});
+export type CreateDraftFontInput = z.infer<typeof createDraftFontSchema>;
+
+/**
+ * PATCH /api/seller/fonts/[id] body — every wizard step after Files (Details,
+ * Preview, Pricing, License) submits a subset of these fields; each is
+ * individually validated to the same rule as its dedicated schema above, but
+ * all optional here since a single PATCH call only ever carries one step's
+ * worth of fields.
+ */
+export const fontUpdateSchema = z
+  .object({
+    name: z.string().trim().min(2, "Name must be at least 2 characters").max(100).optional(),
+    description: z.string().trim().min(20, "Tell customers about this font (min 20 characters)").max(4000).optional(),
+    categoryId: z.string().min(1).optional(),
+    tagIds: z.array(z.string()).max(10).optional(),
+    languages: z.array(z.string()).optional(),
+    glyphCount: z.coerce.number().int().min(0).max(65535).optional(),
+    previewText: z.string().trim().min(1).max(200).optional(),
+    basePriceCents: z.coerce.number().int().min(100, "Minimum price is $1.00").max(10_000_00).optional(),
+    currency: z.string().length(3).optional(),
+    licenseIds: z.array(z.string()).optional(),
+  })
+  .refine((obj) => Object.keys(obj).length > 0, { message: "No fields to update." });
+export type FontUpdateInput = z.infer<typeof fontUpdateSchema>;
