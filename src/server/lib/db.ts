@@ -1,4 +1,14 @@
 import mongoose from "mongoose";
+// Side-effect import: registers every Mongoose model up front. Without this,
+// whichever route/repository happens to run first only registers the specific
+// models it imports directly — so a `.populate("designer")` call from a route
+// that never itself imports designer-profile.model.ts throws
+// `MissingSchemaError: Schema hasn't been registered for model "DesignerProfile"`
+// the first time it's hit in a fresh process, even though a different route that
+// coincidentally imports that model already made it "work". Importing the full
+// barrel once, here, at the single chokepoint every DB-touching code path already
+// calls (`connectDB()`), makes registration order-independent everywhere.
+import "@/server/models/index";
 
 type MongooseCache = {
   conn: typeof mongoose | null;

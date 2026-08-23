@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 // Root error boundary — never shows the raw error to the user (spec §38).
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    // eslint-disable-next-line no-console
     console.error("[app error boundary]", error);
   }, [error]);
 

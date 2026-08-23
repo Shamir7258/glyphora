@@ -149,6 +149,15 @@ export type OrderDTO = {
 
 export type FavoriteDTO = { id: ID; font: FontSummaryDTO; collectionId: ID | null; createdAt: string };
 
+export type ReviewDTO = {
+  id: ID;
+  font: ID;
+  user: { id: ID; name: string; avatarUrl?: string };
+  rating: number;
+  comment: string;
+  createdAt: string;
+};
+
 export type CollectionDTO = {
   id: ID;
   name: string;

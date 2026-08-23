@@ -42,7 +42,22 @@ export const LocalTextSearchProvider: SearchProvider = {
       // to a case-insensitive prefix/substring regex on name so short or
       // typo-heavy queries ("lux") still surface something — true fuzzy matching
       // is an Atlas Search-only capability (documented gap for local dev).
-      mongoFilter.$or = [{ $text: { $search: trimmed } }, { name: { $regex: escapeRegex(trimmed), $options: "i" } }];
+      //
+      // MongoDB forbids `$text` inside `$or` (only one `$text` clause is allowed
+      // per query, and never nested under $or/$nor) — combining the two in a
+      // single query throws `NoQueryExecutionPlans`. Resolve each independently
+      // (both already scoped by the facet filters above) and union the ids
+      // instead of trying to express "text OR regex" as one query.
+      const [textMatches, regexMatches] = await Promise.all([
+        FontModel.find({ ...mongoFilter, $text: { $search: trimmed } })
+          .select("_id")
+          .lean(),
+        FontModel.find({ ...mongoFilter, name: { $regex: escapeRegex(trimmed), $options: "i" } })
+          .select("_id")
+          .lean(),
+      ]);
+      const matchedIds = new Set([...textMatches, ...regexMatches].map((d) => d._id.toString()));
+      mongoFilter._id = { $in: [...matchedIds] };
     }
 
     const sort = resolveSort(filters.sort, !!trimmed);
