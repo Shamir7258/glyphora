@@ -21,6 +21,11 @@ const fontSchema = new Schema(
     description: { type: String, default: "" },
     category: { type: Types.ObjectId, ref: "Category", required: true },
     tags: { type: [Types.ObjectId], ref: "Tag", default: [] },
+    // Which FontLicense templates this font is sold under (spec §12 wizard step 5).
+    // Empty array = not yet configured by the designer; storefront/cart should
+    // fall back to "all active licenses" in that case for backward compatibility
+    // with fonts created before this field existed (see docs/agent-reports).
+    licenses: { type: [Types.ObjectId], ref: "FontLicense", default: [] },
     languages: { type: [String], default: ["English"] },
     glyphCount: { type: Number, default: 0 },
     basePriceCents: { type: Number, required: true, min: 0 },
