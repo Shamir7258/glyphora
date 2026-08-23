@@ -31,11 +31,21 @@ export function useCart() {
     onError: () => toast.error("Couldn't remove that item — please try again."),
   });
 
+  const applyCoupon = useMutation({
+    mutationFn: (code: string) => apiFetch<CartDTO>("/api/cart/coupon", { method: "POST", body: JSON.stringify({ code }) }),
+    onSuccess: (cart) => {
+      queryClient.setQueryData(["cart"], cart);
+      toast.success(cart.couponCode ? `Coupon "${cart.couponCode}" applied` : "Coupon applied");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "That coupon code isn't valid."),
+  });
+
   return {
     cart: cartQuery.data,
     isLoading: cartQuery.isLoading,
     itemCount: cartQuery.data?.items.length ?? 0,
     addItem,
     removeItem,
+    applyCoupon,
   };
 }

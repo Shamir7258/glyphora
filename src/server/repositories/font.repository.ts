@@ -120,17 +120,28 @@ export const FontRepository = {
     productType?: "ORIGINAL" | "MARKETPLACE";
     categorySlug?: string;
     tagSlug?: string;
+    /** Multi-tag AND-filter — additive alongside tagSlug, see docs/agent-reports/frontend-customer.md. */
+    tagSlugs?: string[];
     designerId?: string;
     sort?: "newest" | "popular" | "price_asc" | "price_desc";
     limit?: number;
     page?: number;
     ids?: string[];
+    /** Price range filters on basePriceCents (dollars in, cents used internally). */
+    priceMinCents?: number;
+    priceMaxCents?: number;
   }) {
     await connectDB();
     const filter: Record<string, unknown> = { status: "PUBLISHED" };
     if (params.productType) filter.productType = params.productType;
     if (params.designerId) filter.designer = params.designerId;
     if (params.ids) filter._id = { $in: params.ids };
+    if (params.priceMinCents != null || params.priceMaxCents != null) {
+      filter.basePriceCents = {
+        ...(params.priceMinCents != null ? { $gte: params.priceMinCents } : {}),
+        ...(params.priceMaxCents != null ? { $lte: params.priceMaxCents } : {}),
+      };
+    }
 
     if (params.categorySlug) {
       const { CategoryModel } = await import("@/server/models/category.model");
@@ -138,11 +149,12 @@ export const FontRepository = {
       if (!category) return { items: [] as PopulatedFont[], total: 0 };
       filter.category = category._id;
     }
-    if (params.tagSlug) {
+    const tagSlugs = params.tagSlugs?.length ? params.tagSlugs : params.tagSlug ? [params.tagSlug] : [];
+    if (tagSlugs.length > 0) {
       const { TagModel } = await import("@/server/models/tag.model");
-      const tag = await TagModel.findOne({ slug: params.tagSlug }).select("_id").lean();
-      if (!tag) return { items: [] as PopulatedFont[], total: 0 };
-      filter.tags = tag._id;
+      const tags = await TagModel.find({ slug: { $in: tagSlugs } }).select("_id").lean();
+      if (tags.length === 0) return { items: [] as PopulatedFont[], total: 0 };
+      filter.tags = { $all: tags.map((t) => t._id) };
     }
 
     const sortMap: Record<string, Record<string, 1 | -1>> = {

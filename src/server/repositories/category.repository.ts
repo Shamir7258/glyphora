@@ -14,4 +14,11 @@ export const CategoryRepository = {
       icon: c.icon ?? undefined,
     }));
   },
+
+  async findBySlug(slug: string): Promise<CategoryDTO | null> {
+    await connectDB();
+    const c = await CategoryModel.findOne({ slug, isActive: true }).lean();
+    if (!c) return null;
+    return { id: c._id.toString(), name: c.name, slug: c.slug, description: c.description, icon: c.icon ?? undefined };
+  },
 };

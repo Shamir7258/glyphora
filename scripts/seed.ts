@@ -262,6 +262,13 @@ async function main() {
   for (const spec of FONT_SPECS) {
     const existing = await FontModel.findOne({ name: spec.name });
     if (existing) {
+      // The DB (shared across parallel worktrees) may already have this Font
+      // doc, but the actual font file bytes live on THIS machine's local disk
+      // under a deterministic `seed/<filename>` key — a fresh worktree won't
+      // have them yet. Always (re)write the local files so every worktree can
+      // actually render/download the demo fonts, without touching Mongo again.
+      const buffer = await readFile(path.join(FONTS_DIR, spec.file));
+      await seedFontFile(buffer, spec.file);
       createdFonts.push(existing);
       continue;
     }

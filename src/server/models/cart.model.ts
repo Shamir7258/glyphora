@@ -18,6 +18,12 @@ const cartSchema = new Schema(
       guestId: { type: String, default: null },
     },
     items: { type: [cartItemSchema], default: [] },
+    // Not in the original DATABASE.md Cart shape — added because CartDTO (already
+    // defined in src/types/dto.ts by the foundation phase) carries
+    // discountCents/couponCode, which requires the cart to remember which coupon
+    // is applied. See docs/agent-reports/frontend-customer.md for the note to
+    // fold this into DATABASE.md.
+    coupon: { type: Types.ObjectId, ref: "Coupon", default: null },
   },
   { timestamps: true }
 );
